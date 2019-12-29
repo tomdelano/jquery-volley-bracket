@@ -1,10 +1,19 @@
 /**
- * jQuery Bracket
- *
+ * jQuery Bracket for Swissvolley Tournaments
+ * by Thomas Heynen, 2019
+ * 
+ * Main feature is the option to switch to single elimination in semi-finals
+ * for double elimination brackets.
+ * 
+ * Some functionality may be brocken (there are no tests), when not
+ * using double elimination.
+ * 
+ * Heavily based on
  * Copyright (c) 2011-2018, Teijo Laine,
  * http://aropupu.fi/bracket/
  *
  * Licenced under the MIT licence
+ * 
  */
 
 // tslint:disable-next-line: no-reference
@@ -50,7 +59,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
   skipConsolationRound?: boolean;
   skipSecondaryFinal?: boolean;
   skipGrandFinalComeback?: boolean;
-  skipDoubleEliminationInSemiFinal: boolean;
+  switchToSingleEliminationInSF: boolean;
   headersForSubBrackets: boolean;
   showMatchUserData?: boolean;
   userDataTopCorrection?: number;
@@ -364,7 +373,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     skipConsolationRound: boolean;
     skipSecondaryFinal: boolean;
     skipGrandFinalComeback: boolean;
-    skipDoubleEliminationInSemiFinal : boolean;
+    switchToSingleEliminationInSF: boolean;
     headersForSubBrackets : boolean;
     showMatchUserData: boolean;
     userDataTopCorrection: number;
@@ -609,7 +618,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     skipGrandFinalComeback: boolean
   ) {
     
-    const roundCountAdjust = opts.skipDoubleEliminationInSemiFinal ? 1 : 0;
+    const roundCountAdjust = opts.switchToSingleEliminationInSF ? 1 : 0;
     const roundCount = Math.log(teams.length * 2) / Math.log(2) - roundCountAdjust;
     let matchCount = teams.length;
     let round;
@@ -624,7 +633,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
           !(r === roundCount - 1 && isSingleElimination) &&
           !(r === roundCount - 1 && skipGrandFinalComeback)
         ) {
-          if (opts.skipDoubleEliminationInSemiFinal && r === roundCount - 1) {
+          if (opts.switchToSingleEliminationInSF && r === roundCount - 1) {
             const match = round.addMatch(teamCb, Option.of(semiFinalist));
             match.setConnectorCb(Option.empty());
           }
@@ -780,10 +789,10 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     losers: Bracket<TTeam, TScore, TMData, TUData>,
     teamPairsCount: number,
     skipGrandFinalComeback: boolean,
-    skipDoubleEliminationInSemiFinal : boolean,
+    switchToSingleEliminationInSF: boolean,
     centerConnectors: boolean
   ) {
-    const roundCountAdjust = skipDoubleEliminationInSemiFinal ? 1 : 0;
+    const roundCountAdjust = switchToSingleEliminationInSF ? 1 : 0;
     const roundCount = Math.log(teamPairsCount * 2) / Math.log(2) - 1 - roundCountAdjust;
     let matchCount = teamPairsCount / 2;
 
@@ -820,7 +829,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
               );
           
           const isConsolationMatch = r === roundCount - 1 && skipGrandFinalComeback;
-          const isLastLooserRound = r === roundCount - 1 && n === subRounds - 1 && skipDoubleEliminationInSemiFinal;
+          const isLastLooserRound = r === roundCount - 1 && n === subRounds - 1 && switchToSingleEliminationInSF;
           const match = round.addMatch(
             teamCb,
             Option.of(isLastLooserRound ? semiFinalist : (isConsolationMatch ? consolationBubbles : null))
@@ -1432,14 +1441,14 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     isSingleElimination: boolean,
     skipGrandFinalComeback: boolean,
     skipSecondaryFinal: boolean,
-    skipDoubleEliminationInSemiFinal: boolean,
+    switchToSingleEliminationInSF: boolean,
     results
   ) {
     if (isSingleElimination) {
       return Math.log(teamPairsCount * 2) / Math.log(2);
     } else if (skipGrandFinalComeback) {
       return Math.max(2, (Math.log(teamPairsCount * 2) / Math.log(2) - 1) * 2 - 1); // DE - grand finals
-    } else if (skipDoubleEliminationInSemiFinal) {
+    } else if (switchToSingleEliminationInSF) {
       return ((Math.log(teamPairsCount * 2) / Math.log(2)) - 2) * 2 + 2;
     } else {
       // Loser bracket winner has won first match in grand finals,
@@ -1892,8 +1901,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         this.alignCb(this.teamCon);
         const topTeamCon = this.teamCon.css("top");
         if (this.opts.showMatchUserData) {
-          const top = parseFloat(topTeamCon.slice(0, -2)) + this.opts.userDataTopCorrection;
-          this.matchInfoCon.css({ top }); // matchinfo
+          const topInfo = parseFloat(topTeamCon.slice(0, -2)) + this.opts.userDataTopCorrection;
+          this.matchInfoCon.css({ top: topInfo }); // matchinfo
         }
       }
 
@@ -1957,12 +1966,12 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         isSingleElimination,
         opts.skipGrandFinalComeback,
         opts.skipSecondaryFinal,
-        opts.skipDoubleEliminationInSemiFinal,
+        opts.switchToSingleEliminationInSF,
         data.results
       );
       let widthshift = 10;
       if (!opts.disableToolbar) {widthshift += 30};
-      if (opts.skipDoubleEliminationInSemiFinal) {widthshift += 50};
+      if (opts.switchToSingleEliminationInSF) {widthshift += 50};
       topCon.css({
         // reserve space for consolation round
         height:
@@ -2031,7 +2040,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     else {
       if (!opts.skipGrandFinalComeback) {
         fEl = $('<div class="finals"></div>').appendTo(topCon);
-        if (opts.skipDoubleEliminationInSemiFinal) {
+        if (opts.switchToSingleEliminationInSF) {
           fEl.css( "margin-left", "30px");
         }
       }
@@ -2113,11 +2122,11 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         l,
         data.teams.length,
         opts.skipGrandFinalComeback,
-        opts.skipDoubleEliminationInSemiFinal,
+        opts.switchToSingleEliminationInSF,
         opts.centerConnectors
       );
       if (!opts.skipGrandFinalComeback) {
-        if (opts.skipDoubleEliminationInSemiFinal) {
+        if (opts.switchToSingleEliminationInSF) {
           prepareFinalsInSkipDeInSF(f, w, l, opts, resizeContainer);
         } else {
           prepareFinals(f, w, l, opts, resizeContainer);
@@ -2275,8 +2284,9 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         : getBoolean(input.disableTeamEdit),
       disableToolbar: input.disableToolbar,
       el: context,
-      // TODO: expose via public interface
+        // TODO: expose via public interface
       extension,
+      headersForSubBrackets: input.headersForSubBrackets || false,
       init: parseInit(input.init),
       matchMargin: !input.hasOwnProperty("matchMargin")
         ? 20
@@ -2298,14 +2308,13 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       scoreWidth: !input.hasOwnProperty("scoreWidth")
         ? 30
         : getPositiveOrZero(input.scoreWidth),
+      showMatchUserData: input.showMatchUserData || false,
       skipConsolationRound: input.skipConsolationRound || false,
       skipGrandFinalComeback: input.skipGrandFinalComeback || false,
       skipSecondaryFinal: input.skipSecondaryFinal || false,
-      skipDoubleEliminationInSemiFinal: input.skipDoubleEliminationInSemiFinal || false,
-      headersForSubBrackets: input.headersForSubBrackets || false,
-      showMatchUserData: input.showMatchUserData || false,
-      userDataTopCorrection: input.userDataTopCorrection || 0,
+      switchToSingleEliminationInSF: input.switchToSingleEliminationInSF || false,
       userDataEmptyString: input.userDataEmptyString || "-",
+      userDataTopCorrection: input.userDataTopCorrection || 0,
       teamWidth: !input.hasOwnProperty("teamWidth")
         ? 70
         : getPositiveOrZero(input.teamWidth),
