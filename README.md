@@ -1,7 +1,10 @@
-# jQuery Bracket library
+# jQuery Bracket library edition for Swiss Volley 
 
 jQuery bracket is a jQuery plugin that lets users create and display single and
 double elimination brackets for tournament play.
+To use it with swiss volley tournaments the option to switch to single elimination
+in semi finals was added. This leads to a leaner and more exciting final four phase
+when playing double elimination.
 
 ## Documentation and examples
 
@@ -31,6 +34,7 @@ Minified files are compiled to `dist/` directory.
 
 ## Changes
 
+* 2019: added option to switch to single elimination in semi finals.
 * 2018-01-24: **0.11.1** Fix `TBD` propagation and final connector bug.
 * 2016-11-12: **0.11.0** Center connectors with `centerConnectors: boolean`
   and disable hover highlight with `disableHighlight: boolean`. Bug fixes.
